@@ -1,0 +1,23 @@
+{
+  "name": "litenkod",
+  "version": "1.0.0",
+  "description": "Random code",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/litenkod/litenkod.git"
+  },
+  "keywords": [
+    "litenkod"
+  ],
+  "author": "Magnus Lindeberg",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/litenkod/litenkod/issues"
+  },
+  "homepage": "https://github.com/litenkod/litenkod#readme",
+  "devDependencies": {}
+}

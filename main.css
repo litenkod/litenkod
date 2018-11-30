@@ -1,0 +1,29 @@
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+body{
+    font-size: 16px;
+    font-family: 'Open Sans', Arial;
+}
+
+.top-border{
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    grid-column-gap: 2px;
+}
+
+.top-border span{
+    width: 100%;
+    height: 1rem;
+    display: inline-block;
+    background: pink;
+}
+
+.container{
+    margin-top: 2rem;
+    display: grid;
+    justify-content: center;
+}
