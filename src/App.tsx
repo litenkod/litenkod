@@ -1,15 +1,17 @@
+import { Route, Routes } from "react-router-dom";
+import Apex from "./pages/Apex";
+import Home from "./pages/Home";
 import "./App.css";
 
 function App() {
   return (
-    <div className="flex h-screen w-screen bg-teal-100">
-      <div className="w-full flex items-center justify-center flex-col -mt-9">
-        <h1 className="font-display text-6xl">litenkod.se</h1>
-        <p className="font-sans text-[0.8rem]">
-          liten kod kan göra stora underverk
-        </p>
-      </div>
-    </div>
+    <>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/apex" element={<Apex />} />
+        <Route path="*" element={<Home />} />
+      </Routes>
+    </>
   );
 }
 

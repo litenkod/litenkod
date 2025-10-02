@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script>
+      // GH Pages workaround: skicka tillbaka till rot med söksträngen som path
+      var n = window.location.pathname.replace(/\/+$/, "");
+      var r = n === "" ? "/" : "/";
+      window.location.replace(
+        r +
+          "?" +
+          encodeURIComponent(n + window.location.search + window.location.hash)
+      );
+    </script>
+  </head>
+  <body></body>
+</html>
