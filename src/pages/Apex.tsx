@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 // Lista på Apex Legends (namn). Lägg gärna till/ta bort vid behov.
 const LEGENDS = [
