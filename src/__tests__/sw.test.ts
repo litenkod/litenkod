@@ -1,58 +1,68 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import fs from "node:fs";
-import path from "node:path";
-import vm from "node:vm";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { Context, createContext, runInContext } from "node:vm";
 
-const swSource = fs.readFileSync(path.resolve(__dirname, "../../public/sw.js"), "utf-8");
+const swSource = readFileSync(
+  resolve(__dirname, "../../public/sw.js"),
+  "utf-8"
+);
 
 describe("service worker configuration", () => {
-  let catchHandler: ((args: { event: { request: { destination: string } } }) => Promise<unknown>) | undefined;
+  let catchHandler:
+    | ((args: {
+        event: { request: { destination: string } };
+      }) => Promise<unknown>)
+    | undefined;
   let registeredRoutes: Array<{
-    match: (context: { url: URL; request: { method: string; destination?: string } }) => boolean;
-    strategy: { options: Record<string, any> };
+    match: (context: {
+      url: URL;
+      request: { method: string; destination?: string };
+    }) => boolean;
+    strategy: { options: { plugins?: Array<unknown>; [key: string]: unknown } };
     method?: string;
   }> = [];
   const NetworkFirst = class {
-    options: Record<string, any>;
-    constructor(options: Record<string, any>) {
+    options: Record<string, unknown>;
+    constructor(options: Record<string, unknown>) {
       this.options = options;
     }
   };
   const StaleWhileRevalidate = class {
-    options: Record<string, any>;
-    constructor(options: Record<string, any>) {
+    options: Record<string, unknown>;
+    constructor(options: Record<string, unknown>) {
       this.options = options;
     }
   };
   const CacheFirst = class {
-    options: Record<string, any>;
-    constructor(options: Record<string, any>) {
+    options: Record<string, unknown>;
+    constructor(options: Record<string, unknown>) {
       this.options = options;
     }
   };
   const NetworkOnly = class {
-    options: Record<string, any>;
-    constructor(options: Record<string, any>) {
+    options: Record<string, unknown>;
+    constructor(options: Record<string, unknown>) {
       this.options = options;
     }
   };
   const BackgroundSyncPlugin = class {
     name: string;
-    options: Record<string, any>;
-    constructor(name: string, options: Record<string, any>) {
+    options: Record<string, unknown>;
+    constructor(name: string, options: Record<string, unknown>) {
       this.name = name;
       this.options = options;
     }
   };
   const CacheableResponsePlugin = class {
-    options: Record<string, any>;
-    constructor(options: Record<string, any>) {
+    options: Record<string, unknown>;
+    constructor(options: Record<string, unknown>) {
       this.options = options;
     }
   };
   const ExpirationPlugin = class {
-    options: Record<string, any>;
-    constructor(options: Record<string, any>) {
+    options: Record<string, unknown>;
+    constructor(options: Record<string, unknown>) {
       this.options = options;
     }
   };
@@ -66,8 +76,11 @@ describe("service worker configuration", () => {
     routing: {
       registerRoute: vi.fn(
         (
-          match: (context: { url: URL; request: { method: string; destination?: string } }) => boolean,
-          strategy: { options: Record<string, any> },
+          match: (context: {
+            url: URL;
+            request: { method: string; destination?: string };
+          }) => boolean,
+          strategy: { options: Record<string, unknown> },
           method?: string
         ) => {
           registeredRoutes.push({ match, strategy, method });
@@ -116,10 +129,10 @@ describe("service worker configuration", () => {
       importScripts: vi.fn(),
       console,
       Response,
-    } as unknown as vm.Context;
+    } as unknown as Context;
 
-    vm.createContext(context);
-    vm.runInContext(swSource, context);
+    createContext(context);
+    runInContext(swSource, context);
   });
 
   it("returns offline.html when navigation fails", async () => {
@@ -145,7 +158,10 @@ describe("service worker configuration", () => {
 
   it("uses NetworkFirst strategy with timeout for API requests", () => {
     const apiRoute = registeredRoutes.find((route) =>
-      route.match({ url: new URL("https://litenkod.se/api/data"), request: { method: "GET" } })
+      route.match({
+        url: new URL("https://litenkod.se/api/data"),
+        request: { method: "GET" },
+      })
     );
 
     expect(apiRoute).toBeDefined();
@@ -154,10 +170,14 @@ describe("service worker configuration", () => {
     const options = apiRoute?.strategy.options;
     expect(options?.networkTimeoutSeconds).toBe(3);
 
-    const cacheablePlugin = options?.plugins?.find((plugin: unknown) => plugin instanceof CacheableResponsePlugin);
+    const cacheablePlugin = options?.plugins?.find(
+      (plugin: unknown) => plugin instanceof CacheableResponsePlugin
+    );
     expect(cacheablePlugin?.options.statuses).toEqual([0, 200]);
 
-    const expirationPlugin = options?.plugins?.find((plugin: unknown) => plugin instanceof ExpirationPlugin);
+    const expirationPlugin = options?.plugins?.find(
+      (plugin: unknown) => plugin instanceof ExpirationPlugin
+    );
     expect(expirationPlugin?.options.maxAgeSeconds).toBe(600);
     expect(expirationPlugin?.options.maxEntries).toBe(50);
   });

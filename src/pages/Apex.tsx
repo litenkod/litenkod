@@ -61,7 +61,10 @@ function coerceLegendList(value: unknown): Legend[] | null {
     if (typeof candidate.name !== "string") continue;
     if (typeof candidate.class !== "string") continue;
     if (!VALID_CLASSES.has(candidate.class as Legend["class"])) continue;
-    sanitized.push({ name: candidate.name, class: candidate.class as Legend["class"] });
+    sanitized.push({
+      name: candidate.name,
+      class: candidate.class as Legend["class"],
+    });
   }
   return sanitized.length > 0 ? sanitized : null;
 }
@@ -132,9 +135,11 @@ export default function RandomLegendPicker() {
       } catch (error) {
         console.warn("Failed to refresh legends", error);
         if (active && dataSourceRef.current === "default") {
-          setDataStatus("Visar förinstallerad lista – nätverket kunde inte nås.");
+          setDataStatus(
+            "Showing pre-installed list – network could not be reached."
+          );
         } else if (active && dataSourceRef.current === "cache") {
-          setDataStatus("Visar cachelagrad data (senaste kända listan).");
+          setDataStatus("Showing cached data (most recent known list).");
         }
       } finally {
         if (active) {
@@ -280,9 +285,7 @@ export default function RandomLegendPicker() {
                   className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"
                 />
               )}
-              <span>
-                {isSyncing ? "Uppdaterar legendlistan..." : dataStatus}
-              </span>
+              <span>{isSyncing ? "Updating legend list..." : dataStatus}</span>
             </div>
           )}
 
