@@ -1,35 +1,46 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { usePageTitle } from "../hooks/usePageTitle";
 
-// Lista på Apex Legends (namn). Lägg gärna till/ta bort vid behov.
-const LEGENDS = [
-  "Ash",
-  "Bangalore",
-  "Fuse",
-  "Mad Maggie",
-  "Ballistic",
-  "Revenant",
-  "Wraith",
-  "Octane",
-  "Mirage",
-  "Pathfinder",
-  "Horizon",
-  "Valkyrie",
-  "Alter",
-  "Bloodhound",
-  "Crypto",
-  "Seer",
-  "Vantage",
-  "Sparrow",
-  "Caustic",
-  "Wattson",
-  "Rampart",
-  "Catalyst",
-  "Gibraltar",
-  "Lifeline",
-  "Loba",
-  "Newcastle",
-  "Conduit",
+type Legend = {
+  name: string;
+  class: "Assault" | "Skirmisher" | "Recon" | "Support" | "Controller";
+};
+
+const LEGENDS: Legend[] = [
+  { name: "Ash", class: "Assault" },
+  { name: "Bangalore", class: "Assault" },
+  { name: "Fuse", class: "Assault" },
+  { name: "Mad Maggie", class: "Assault" },
+  { name: "Ballistic", class: "Assault" },
+
+  { name: "Revenant", class: "Skirmisher" },
+  { name: "Wraith", class: "Skirmisher" },
+  { name: "Octane", class: "Skirmisher" },
+  { name: "Mirage", class: "Skirmisher" },
+  { name: "Pathfinder", class: "Skirmisher" },
+  { name: "Horizon", class: "Skirmisher" },
+  { name: "Alter", class: "Skirmisher" },
+
+  { name: "Bloodhound", class: "Recon" },
+  { name: "Crypto", class: "Recon" },
+  { name: "Seer", class: "Recon" },
+  { name: "Vantage", class: "Recon" },
+  { name: "Sparrow", class: "Recon" },
+  { name: "Valkyrie", class: "Recon" },
+
+  { name: "Gibraltar", class: "Support" },
+  { name: "Lifeline", class: "Support" },
+  { name: "Loba", class: "Support" },
+  { name: "Newcastle", class: "Support" },
+  { name: "Conduit", class: "Support" },
+
+  { name: "Caustic", class: "Controller" },
+  { name: "Wattson", class: "Controller" },
+  { name: "Rampart", class: "Controller" },
+  { name: "Catalyst", class: "Controller" },
 ];
+
+type ChosenLegend = Legend & { id: string };
 
 // Hjälpfunktion: slumpa utan återläggning
 function sampleWithoutReplacement<T>(arr: T[], n: number): T[] {
@@ -46,18 +57,67 @@ function slugify(name: string) {
 }
 
 export default function RandomLegendPicker() {
+  usePageTitle("litenkod – Apex");
+
   const [count, setCount] = useState(1);
-  const [chosen, setChosen] = useState<string[]>([]);
+  const [chosen, setChosen] = useState<ChosenLegend[]>([]);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [excluded, setExcluded] = useState<string[]>([]);
 
   const maxCount = 4;
   const options = useMemo(
     () => Array.from({ length: maxCount }, (_, i) => i + 1),
     [maxCount]
   );
+  const availableLegends = useMemo(
+    () => LEGENDS.filter((legend) => !excluded.includes(legend.name)),
+    [excluded]
+  );
+
+  useEffect(() => {
+    if (!settingsOpen) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setSettingsOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [settingsOpen]);
+
+  useEffect(() => {
+    if (availableLegends.length === 0) return;
+    if (count > availableLegends.length) {
+      setCount(availableLegends.length);
+    }
+  }, [availableLegends, count]);
+  function toggleExcluded(name: string) {
+    setExcluded((prev) =>
+      prev.includes(name)
+        ? prev.filter((entry) => entry !== name)
+        : [...prev, name]
+    );
+  }
 
   function draw() {
-    const n = Math.min(Math.max(1, count), maxCount);
-    setChosen(sampleWithoutReplacement(LEGENDS, n));
+    if (availableLegends.length === 0) {
+      setChosen([]);
+      return;
+    }
+    const n = Math.min(Math.max(1, count), availableLegends.length);
+    if (n !== count) {
+      setCount(n);
+    }
+    const timestamp = Date.now();
+    const picks = sampleWithoutReplacement(availableLegends, n).map(
+      (legend, index) => ({
+        ...legend,
+        id: `${legend.name}-${timestamp}-${index}`,
+      })
+    );
+    setChosen(picks);
   }
 
   return (
@@ -68,6 +128,22 @@ export default function RandomLegendPicker() {
           <h2 className="text-lg md:text-4xl font-display text-slate-300">
             Randomize Your Squad for your next adventure!
           </h2>
+        </div>
+
+        <div className="mb-6 flex justify-end">
+          <button
+            onClick={() => setSettingsOpen(true)}
+            className="fixed top-5 right-4 inline-flex items-center gap-2 rounded-full border border-indigo-300/40 bg-indigo-500/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.4em] text-indigo-100 transition hover:bg-indigo-500/30"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 640 640"
+              className="h-4 w-4"
+              fill="currentColor"
+            >
+              <path d="M96 128c-17.7 0-32 14.3-32 32s14.3 32 32 32h86.7c12.3 28.3 40.5 48 73.3 48s61-19.7 73.3-48H544c17.7 0 32-14.3 32-32s-14.3-32-32-32H329.3C317 99.7 288.8 80 256 80s-61 19.7-73.3 48zm0 160c-17.7 0-32 14.3-32 32s14.3 32 32 32h246.7c12.3 28.3 40.5 48 73.3 48s61-19.7 73.3-48H544c17.7 0 32-14.3 32-32s-14.3-32-32-32h-54.7c-12.3-28.3-40.5-48-73.3-48s-61 19.7-73.3 48zm0 160c-17.7 0-32 14.3-32 32s14.3 32 32 32h54.7c12.3 28.3 40.5 48 73.3 48s61-19.7 73.3-48H544c17.7 0 32-14.3 32-32s-14.3-32-32-32H297.3c-12.3-28.3-40.5-48-73.3-48s-61 19.7-73.3 48z" />
+            </svg>
+          </button>
         </div>
 
         {/* Kort */}
@@ -91,7 +167,8 @@ export default function RandomLegendPicker() {
 
             <button
               onClick={draw}
-              className="px-4 py-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 font-display text-2xl shadow"
+              disabled={availableLegends.length === 0}
+              className="px-4 py-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 font-display text-2xl shadow disabled:cursor-not-allowed disabled:opacity-40"
             >
               Random
             </button>
@@ -101,24 +178,51 @@ export default function RandomLegendPicker() {
           <div className="border-t border-white/10 p-1">
             {chosen.length > 0 ? (
               <ul className="md:grid grid-row-3 sm:grid-cols-2 md:grid-cols-3 md:grid-row-1 gap-3">
-                {chosen.map((name) => (
+                {chosen.map((legend, index) => (
                   <li
-                    key={name}
-                    className="flex items-center gap-3 bg-slate-900/60 l p-1"
+                    key={legend.id}
+                    className="fade-in flex items-center gap-3 rounded-xl bg-slate-900/60 p-3"
+                    style={{ animationDelay: `${index * 250}ms` }}
                   >
                     <img
-                      src={`/images/apex/${slugify(name)}.png`}
-                      alt={name}
-                      className="w-25 h-25 md:w-30 md:h-30"
+                      src={`/images/apex/${slugify(legend.name)}.png`}
+                      alt={legend.name}
+                      className="h-20 w-20 md:h-24 md:w-24"
                     />
-                    <span className="text-lg font-semibold">{name}</span>
+                    <div className="flex flex-col font-display">
+                      <span className="text-lg font-semibold">
+                        {legend.name}
+                      </span>
+                      <span className="text-xs uppercase tracking-widest text-slate-400">
+                        {legend.class}
+                      </span>
+                    </div>
                   </li>
                 ))}
               </ul>
             ) : (
-              <div className="text-slate-300 text-sm p-2 text-center">
-                No legend selected yet.
-              </div>
+              <ul className="md:grid grid-row-3 sm:grid-cols-2 md:grid-cols-3 md:grid-row-1 gap-3">
+                {Array.from(
+                  {
+                    length:
+                      availableLegends.length === 0
+                        ? count
+                        : Math.min(count, availableLegends.length),
+                  },
+                  (_, index) => (
+                    <li
+                      key={`placeholder-${index}`}
+                      className="flex items-center gap-3 rounded-xl bg-slate-900/40 p-3"
+                    >
+                      <div className="h-20 w-20 rounded-xl bg-slate-800/70 animate-pulse md:h-20 md:w-20" />
+                      <div className="flex w-full flex-col gap-2">
+                        <span className="h-4 w-24 rounded bg-slate-800/70 animate-pulse" />
+                        <span className="h-3 w-16 rounded bg-slate-800/50 animate-pulse" />
+                      </div>
+                    </li>
+                  )
+                )}
+              </ul>
             )}
           </div>
         </div>
@@ -127,6 +231,78 @@ export default function RandomLegendPicker() {
           <p>Gear up and conquer the arena. Your next adventure awaits!</p>
         </div>
       </div>
+
+      {settingsOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-slate-950/70 backdrop-blur-sm"
+            onClick={() => setSettingsOpen(false)}
+          />
+          <aside className="drawer-enter fixed inset-y-0 right-0 z-50 w-[90vw] max-w-md border-l border-white/10 bg-slate-950/95 shadow-xl md:w-full">
+            <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-indigo-300">
+                  Settings
+                </p>
+                <h3 className="font-display text-xl text-white">
+                  Legender &amp; Roller
+                </h3>
+              </div>
+              <button
+                onClick={() => setSettingsOpen(false)}
+                className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-sm text-white transition hover:bg-white/20"
+              >
+                Stäng
+              </button>
+            </div>
+
+            {/* exclude  */}
+            <div className="h-full overflow-y-auto px-5 py-4">
+              <p className="text-xs text-slate-100 mb-3">
+                Select which legends to exclude from the draw:
+              </p>
+              <ul className="grid grid-cols-4 gap-3 sm:grid-cols-5">
+                {LEGENDS.map((legend) => {
+                  const isExcluded = excluded.includes(legend.name);
+                  return (
+                    <li key={`drawer-${legend.name}`}>
+                      <button
+                        type="button"
+                        onClick={() => toggleExcluded(legend.name)}
+                        className={`flex w-full items-center gap-1 relative border border-white/10 bg-slate-900 p-2 text-left transition focus:outline-none focus:ring-2 focus:ring-indigo-400/70 focus:ring-offset-2 focus:ring-offset-slate-950 ${
+                          isExcluded
+                            ? "border border-dashed border-indigo-600 bg-slate-900/10 opacity-60"
+                            : "hover:border-indigo-300/40 hover:bg-indigo-500/10"
+                        }`}
+                        aria-pressed={isExcluded}
+                      >
+                        <img
+                          src={`/images/apex/${slugify(legend.name)}.png`}
+                          alt={legend.name}
+                          className="h-12 w-12  object-contain"
+                        />
+                        <div className="absolute top-0.5 right-2">
+                          <p className="font-display text-[10px] text-indigo-100/80">
+                            {legend.name}
+                          </p>
+                          {/* <p className="text-xs uppercase tracking-widest text-slate-400">
+                            {legend.class}
+                          </p>
+                          {isExcluded && (
+                            <p className="text-[0.65rem] uppercase tracking-widest text-indigo-300">
+                              Exkluderad
+                            </p>
+                          )} */}
+                        </div>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </aside>
+        </>
+      )}
     </div>
   );
 }

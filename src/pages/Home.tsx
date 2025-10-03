@@ -1,6 +1,9 @@
 import { Link } from "react-router-dom";
+import { usePageTitle } from "../hooks/usePageTitle";
 
 function Home() {
+  usePageTitle("litenkod – Hem");
+
   return (
     <>
       <nav className="fixed right-6 top-6 z-50 flex gap-3 text-sm font-medium">
