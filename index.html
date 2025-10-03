@@ -1,16 +1,33 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sv">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/images/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>app</title>
+    <meta name="theme-color" content="#0ea5e9" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <title>litenkod</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Big+Shoulders:opsz,wght@10..72,100..900&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap"
       rel="stylesheet"
     />
+    <style>
+      /* Låt bakgrunden fylla in i “notch” */
+      :root {
+        color-scheme: light dark;
+      }
+      body {
+        margin: 0;
+        background: #0ea5e9;
+      }
+      @supports (padding-top: env(safe-area-inset-top)) {
+        body {
+          padding-top: env(safe-area-inset-top);
+        }
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

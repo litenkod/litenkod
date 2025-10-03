@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { getList, saveList } from "../db.js";
 import { usePageTitle } from "../hooks/usePageTitle";
 
 type Legend = {
@@ -6,7 +7,7 @@ type Legend = {
   class: "Assault" | "Skirmisher" | "Recon" | "Support" | "Controller";
 };
 
-const LEGENDS: Legend[] = [
+const DEFAULT_LEGENDS: Legend[] = [
   { name: "Ash", class: "Assault" },
   { name: "Bangalore", class: "Assault" },
   { name: "Fuse", class: "Assault" },
@@ -42,6 +43,29 @@ const LEGENDS: Legend[] = [
 
 type ChosenLegend = Legend & { id: string };
 
+const LEGEND_SOURCE_URL = "/api/legends.json";
+const VALID_CLASSES = new Set<Legend["class"]>([
+  "Assault",
+  "Skirmisher",
+  "Recon",
+  "Support",
+  "Controller",
+]);
+
+function coerceLegendList(value: unknown): Legend[] | null {
+  if (!Array.isArray(value)) return null;
+  const sanitized: Legend[] = [];
+  for (const entry of value) {
+    if (!entry || typeof entry !== "object") continue;
+    const candidate = entry as Partial<Legend>;
+    if (typeof candidate.name !== "string") continue;
+    if (typeof candidate.class !== "string") continue;
+    if (!VALID_CLASSES.has(candidate.class as Legend["class"])) continue;
+    sanitized.push({ name: candidate.name, class: candidate.class as Legend["class"] });
+  }
+  return sanitized.length > 0 ? sanitized : null;
+}
+
 // Hjälpfunktion: slumpa utan återläggning
 function sampleWithoutReplacement<T>(arr: T[], n: number): T[] {
   const copy = [...arr];
@@ -59,6 +83,10 @@ function slugify(name: string) {
 export default function RandomLegendPicker() {
   usePageTitle("litenkod – Apex");
 
+  const [legends, setLegends] = useState<Legend[]>(DEFAULT_LEGENDS);
+  const dataSourceRef = useRef<"default" | "cache" | "remote">("default");
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [dataStatus, setDataStatus] = useState<string | null>(null);
   const [count, setCount] = useState(1);
   const [chosen, setChosen] = useState<ChosenLegend[]>([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -70,9 +98,79 @@ export default function RandomLegendPicker() {
     [maxCount]
   );
   const availableLegends = useMemo(
-    () => LEGENDS.filter((legend) => !excluded.includes(legend.name)),
-    [excluded]
+    () => legends.filter((legend) => !excluded.includes(legend.name)),
+    [excluded, legends]
   );
+
+  useEffect(() => {
+    let active = true;
+
+    const applyData = (list: Legend[], source: "cache" | "remote") => {
+      if (!active) return;
+      setLegends(list);
+      dataSourceRef.current = source;
+      setDataStatus(source === "cache" ? "Visar cachelagrad data." : null);
+    };
+
+    const fetchLatest = async () => {
+      setIsSyncing(true);
+      try {
+        const response = await fetch(LEGEND_SOURCE_URL, { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const payload = await response.json();
+        const next = coerceLegendList(payload);
+        if (next && active) {
+          applyData(next, "remote");
+          try {
+            await saveList(next);
+          } catch (cacheError) {
+            console.warn("Failed to cache legends", cacheError);
+          }
+        }
+      } catch (error) {
+        console.warn("Failed to refresh legends", error);
+        if (active && dataSourceRef.current === "default") {
+          setDataStatus("Visar förinstallerad lista – nätverket kunde inte nås.");
+        } else if (active && dataSourceRef.current === "cache") {
+          setDataStatus("Visar cachelagrad data (senaste kända listan).");
+        }
+      } finally {
+        if (active) {
+          setIsSyncing(false);
+        }
+      }
+    };
+
+    (async () => {
+      try {
+        const cached = await getList();
+        const parsed = coerceLegendList(cached ?? undefined);
+        if (parsed) {
+          applyData(parsed, "cache");
+        }
+      } catch (error) {
+        console.warn("Failed to read cached legends", error);
+      } finally {
+        fetchLatest().catch((error) => {
+          console.warn("Initial legend fetch failed", error);
+        });
+      }
+    })();
+
+    const handleOnline = () => {
+      fetchLatest().catch((error) => {
+        console.warn("Legend refresh after reconnect failed", error);
+      });
+    };
+
+    window.addEventListener("online", handleOnline);
+    return () => {
+      active = false;
+      window.removeEventListener("online", handleOnline);
+    };
+  }, []);
 
   useEffect(() => {
     if (!settingsOpen) return;
@@ -174,6 +272,20 @@ export default function RandomLegendPicker() {
             </button>
           </div>
 
+          {(isSyncing || dataStatus) && (
+            <div className="px-4 pb-3 text-xs text-slate-400 flex items-center gap-2">
+              {isSyncing && (
+                <span
+                  aria-hidden="true"
+                  className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"
+                />
+              )}
+              <span>
+                {isSyncing ? "Uppdaterar legendlistan..." : dataStatus}
+              </span>
+            </div>
+          )}
+
           {/* Resultatlista */}
           <div className="border-t border-white/10 p-1">
             {chosen.length > 0 ? (
@@ -262,7 +374,7 @@ export default function RandomLegendPicker() {
                 Select which legends to exclude from the draw:
               </p>
               <ul className="grid grid-cols-4 gap-3 sm:grid-cols-5">
-                {LEGENDS.map((legend) => {
+                {legends.map((legend) => {
                   const isExcluded = excluded.includes(legend.name);
                   return (
                     <li key={`drawer-${legend.name}`}>
