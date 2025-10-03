@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { Context, createContext, runInContext } from "node:vm";
+import type { Context } from "node:vm";
+import { createContext, runInContext } from "node:vm";
 
 const swSource = readFileSync(
   resolve(__dirname, "../../public/sw.js"),

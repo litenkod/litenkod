@@ -17,11 +17,13 @@ if (self.workbox) {
   core.skipWaiting();
   core.clientsClaim();
 
-  const precacheManifest = Array.isArray(self.__WB_MANIFEST)
-    ? self.__WB_MANIFEST
+  const manifestEntries = self.__WB_MANIFEST;
+
+  const precacheManifest = Array.isArray(manifestEntries)
+    ? manifestEntries
     : [];
 
-  if (!Array.isArray(self.__WB_MANIFEST)) {
+  if (!Array.isArray(manifestEntries)) {
     console.warn(
       "Workbox precache manifest missing or invalid; skipping precache population."
     );
