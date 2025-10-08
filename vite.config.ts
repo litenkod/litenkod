@@ -20,6 +20,7 @@ export default defineConfig({
       },
       injectManifest: {
         globPatterns: ["**/*.{js,css,html,svg,png,ico,webp,json,woff,woff2}"],
+        globIgnores: ["**/offline.html", "**/images/fallback.png"],
         additionalManifestEntries: [
           { url: "/", revision: appPackage.version ?? "0.0.0" },
           { url: "/offline.html", revision: appPackage.version ?? "0.0.0" },
